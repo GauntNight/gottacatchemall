@@ -70,6 +70,29 @@ With `NTFY_TOPIC` empty, the monitor runs in **dry-run**: alerts print to
 the console instead of pushing. Set the topic and subscribe to it in the
 [ntfy](https://ntfy.sh) mobile app to get phone notifications.
 
+## Reddit OAuth (recommended)
+
+Reddit throttles and frequently `403`s anonymous `.json` requests
+regardless of IP. The fix is a free OAuth app — Reddit then allows 100
+req/min from a stable, authenticated endpoint. One-time setup:
+
+1. Create an app at <https://www.reddit.com/prefs/apps> →
+   **type: web app**, **redirect uri: `http://localhost:8080`** (exact).
+2. Put the id/secret in `.env`:
+   ```
+   REDDIT_CLIENT_ID=...
+   REDDIT_CLIENT_SECRET=...
+   ```
+3. Mint a permanent refresh token (opens your browser, log in → Allow):
+   ```bash
+   python -m tcgmon.reddit_auth
+   ```
+4. Paste the printed `REDDIT_REFRESH_TOKEN=...` line into `.env`.
+
+With all three values set, `reddit_json` automatically uses the
+authenticated `oauth.reddit.com` API and refreshes its own access tokens.
+Leave them blank to fall back to the (rate-limited) anonymous endpoint.
+
 ## Configuring targets
 
 Everything you watch lives in [`targets.yaml`](./targets.yaml). Adding the

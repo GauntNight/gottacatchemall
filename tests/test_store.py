@@ -5,7 +5,7 @@ These are pure logic + a temp SQLite file; no network needed.
 
 from __future__ import annotations
 
-from tcgmon.fetchers.reddit_json import _as_json_url
+from tcgmon.fetchers.reddit_json import _as_json_url, _oauth_url
 from tcgmon.models import Observation, Status
 from tcgmon.store import StateStore, is_alertable
 
@@ -25,6 +25,16 @@ def test_reddit_json_already_suffixed_is_untouched():
 def test_reddit_json_bare_path():
     assert (_as_json_url("https://www.reddit.com/r/x/new")
             == "https://www.reddit.com/r/x/new.json")
+
+
+def test_reddit_oauth_url_drops_json_and_swaps_host():
+    assert (_oauth_url("https://www.reddit.com/r/x/new.json?limit=25")
+            == "https://oauth.reddit.com/r/x/new?limit=25")
+
+
+def test_reddit_oauth_url_bare_path():
+    assert (_oauth_url("https://www.reddit.com/r/x/new?limit=25")
+            == "https://oauth.reddit.com/r/x/new?limit=25")
 
 
 # ── is_alertable: the transition table ────────────────────────────────────
