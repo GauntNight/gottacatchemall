@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tcg-drop-monitor"
+version = "0.1.0"
+description = "Pokémon TCG preorder/restock monitor — edge-detection on stock state with push alerts"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+dependencies = [
+    "httpx>=0.27",
+    "feedparser>=6.0",
+    "PyYAML>=6.0",
+    "python-dotenv>=1.0",
+    "APScheduler>=3.10",
+    "selectolax>=0.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[project.scripts]
+tcgmon = "tcgmon.run:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

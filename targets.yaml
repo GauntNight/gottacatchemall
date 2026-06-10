@@ -1,0 +1,77 @@
+# TCG Drop Monitor — watch list (design rule #5: config-driven targets).
+#
+# Adding the next set = adding entries here, no code changes. Each target
+# maps to a fetcher by name (see `python -m tcgmon --list`).
+#
+# Tiers (poll cadence):
+#   Tier 1 aggregate intelligence ........ 15–60 min  (reddit_json, rss)
+#   Tier 2 SKU watchers .................. 5–15 min   (shopify_json, bestbuy_api, ...)
+#
+# Polite tier (official APIs / JSON) can run fast; bot-protected HTML
+# (Pokémon Center, Walmart, Target) stays slow and fails soft to UNKNOWN.
+
+targets:
+  # ─── Tier 1: aggregate intelligence (enabled — this is Phase 1) ─────────
+  - name: reddit-pkmntcgdeals
+    fetcher: reddit_json
+    url: https://www.reddit.com/r/PKMNTCGDeals/new.json?limit=25
+    interval_minutes: 10
+    keywords: [preorder, pre-order, restock, "in stock", live, ETB, "elite trainer"]
+
+  - name: reddit-pokemontcg
+    fetcher: reddit_json
+    url: https://www.reddit.com/r/PokemonTCG/new.json?limit=25
+    interval_minutes: 15
+    keywords: [preorder, pre-order, restock, "in stock", live, ETB, "elite trainer"]
+
+  - name: pokebeach-news
+    fetcher: rss
+    url: https://www.pokebeach.com/feed
+    interval_minutes: 20
+    keywords: []   # PokeBeach is TCG-specific; take everything
+
+  # ─── Tier 2: the easy wins (Phase 2 — enable when you have a key/URLs) ──
+  # Best Buy: the only real official API. Set BESTBUY_API_KEY in .env.
+  - name: bestbuy-etb-search
+    fetcher: bestbuy_api
+    interval_minutes: 5
+    enabled: false
+    options:
+      search: pokemon elite trainer
+
+  # Shopify storefronts expose {product_url}.json — flip enabled once the
+  # next set's product URLs exist. (URLs below are this-set placeholders.)
+  - name: galactic-toys
+    fetcher: shopify_json
+    url: https://galactictoys.com/products/pre-order-july-2026-pokemon-tcg-mega-evolutions-pitch-black-me05-elite-trainer-box
+    interval_minutes: 10
+    enabled: false
+
+  - name: rocket-city-toys
+    fetcher: shopify_json
+    url: https://www.rocketcitytoys.com/products/pok-mon-tcg-mega-evolution-pitch-black-elite-trainer-box
+    interval_minutes: 10
+    enabled: false
+
+  # Custom storefronts with no JSON — generic add-to-cart text scrape.
+  - name: dacardworld
+    fetcher: html_button
+    url: https://www.dacardworld.com/gaming/pokemon-mega-evolution-pitch-black-elite-trainer-box
+    interval_minutes: 15
+    enabled: false
+
+  # ─── Tier 2: bot-protected (Phase 3 — slow, fail-soft, off by default) ──
+  - name: walmart-etb
+    fetcher: nextdata
+    url: https://www.walmart.com/ip/PLACEHOLDER/000000000
+    interval_minutes: 15
+    enabled: false
+
+  - name: target-etb
+    fetcher: redsky
+    url: https://www.target.com/p/PLACEHOLDER/-/A-00000000
+    interval_minutes: 15
+    enabled: false
+    options:
+      tcin: "00000000"
+      key: "PUBLIC_WEB_KEY_FROM_DEVTOOLS"
