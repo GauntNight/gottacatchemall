@@ -9,6 +9,7 @@ fullname id, so a matching post alerts exactly once.
 from __future__ import annotations
 
 import logging
+from urllib.parse import urlsplit, urlunsplit
 
 import httpx
 
@@ -20,6 +21,19 @@ from .base import register
 log = logging.getLogger("tcgmon.reddit")
 
 
+def _as_json_url(url: str) -> str:
+    """Ensure the ``.json`` suffix sits on the path, before the query.
+
+    ``.../new?limit=25`` -> ``.../new.json?limit=25`` and an already-correct
+    ``.../new.json?limit=25`` is left untouched.
+    """
+    parts = urlsplit(url)
+    path = parts.path
+    if not path.endswith(".json"):
+        path = f"{path.rstrip('/')}.json"
+    return urlunsplit((parts.scheme, parts.netloc, path, parts.query, parts.fragment))
+
+
 def _matches(title: str, keywords: list[str]) -> bool:
     if not keywords:
         return True
@@ -29,7 +43,7 @@ def _matches(title: str, keywords: list[str]) -> bool:
 
 @register("reddit_json")
 async def fetch(target: Target, client: httpx.AsyncClient) -> list[Observation]:
-    url = target.url if target.url.endswith(".json") else f"{target.url}.json"
+    url = _as_json_url(target.url)
     try:
         resp = await client.get(url, headers={"User-Agent": REDDIT_USER_AGENT})
         resp.raise_for_status()
