@@ -1,6 +1,10 @@
 # Secrets — never commit
 .env
 
+# Saved logged-in browser session (Reddit) — contains auth cookies
+.reddit_session.json
+*.session.json
+
 # State store
 *.db
 *.sqlite

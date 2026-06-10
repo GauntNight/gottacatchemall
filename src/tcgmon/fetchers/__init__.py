@@ -6,8 +6,9 @@ from .base import Fetcher, get_fetcher, register, registered
 
 # Import side effects populate the registry. Phase 1 + 2 are functional;
 # Phase 3 fetchers are best-effort and fail soft to UNKNOWN.
-from . import reddit_json  # noqa: F401,E402  (Tier 1)
-from . import rss  # noqa: F401,E402           (Tier 1)
+from . import reddit_json  # noqa: F401,E402     (Tier 1)
+from . import reddit_browser  # noqa: F401,E402  (Tier 1, logged-in browser)
+from . import rss  # noqa: F401,E402             (Tier 1)
 from . import shopify_json  # noqa: F401,E402  (Tier 2)
 from . import bestbuy_api  # noqa: F401,E402   (Tier 2)
 from . import redsky  # noqa: F401,E402        (Tier 2, Phase 3)

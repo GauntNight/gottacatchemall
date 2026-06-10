@@ -13,13 +13,13 @@
 targets:
   # ─── Tier 1: aggregate intelligence (enabled — this is Phase 1) ─────────
   - name: reddit-pkmntcgdeals
-    fetcher: reddit_json
+    fetcher: reddit_browser
     url: https://www.reddit.com/r/PKMNTCGDeals/new.json?limit=25
     interval_minutes: 10
     keywords: [preorder, pre-order, restock, "in stock", live, ETB, "elite trainer"]
 
   - name: reddit-pokemontcg
-    fetcher: reddit_json
+    fetcher: reddit_browser
     url: https://www.reddit.com/r/PokemonTCG/new.json?limit=25
     interval_minutes: 15
     keywords: [preorder, pre-order, restock, "in stock", live, ETB, "elite trainer"]

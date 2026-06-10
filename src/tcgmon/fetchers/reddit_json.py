@@ -93,6 +93,34 @@ def _matches(title: str, keywords: list[str]) -> bool:
     return any(kw.lower() in low for kw in keywords)
 
 
+def parse_listing(data: dict, target: Target) -> list[Observation]:
+    """Turn a Reddit listing JSON into keyword-filtered observations.
+
+    Shared by the anonymous/OAuth path here and the browser-session
+    fetcher (reddit_browser) — both receive the same listing shape.
+    """
+    out: list[Observation] = []
+    for child in data.get("data", {}).get("children", []):
+        post = child.get("data", {})
+        title = post.get("title", "")
+        if not _matches(title, target.keywords):
+            continue
+        post_id = post.get("name") or post.get("id")  # e.g. t3_abc123
+        permalink = post.get("permalink")
+        link = (
+            f"https://www.reddit.com{permalink}" if permalink else post.get("url")
+        )
+        out.append(
+            Observation(
+                key=f"reddit:{post.get('subreddit', '?')}:{post_id}",
+                status=Status.LISTED,
+                title=title,
+                url=link,
+            )
+        )
+    return out
+
+
 async def _get_listing(target: Target, client: httpx.AsyncClient) -> dict | None:
     """Fetch the listing JSON via OAuth if configured, else anonymously."""
     if _oauth_configured():
@@ -119,24 +147,4 @@ async def fetch(target: Target, client: httpx.AsyncClient) -> list[Observation]:
     data = await _get_listing(target, client)
     if data is None:
         return []
-
-    out: list[Observation] = []
-    for child in data.get("data", {}).get("children", []):
-        post = child.get("data", {})
-        title = post.get("title", "")
-        if not _matches(title, target.keywords):
-            continue
-        post_id = post.get("name") or post.get("id")  # e.g. t3_abc123
-        permalink = post.get("permalink")
-        link = (
-            f"https://www.reddit.com{permalink}" if permalink else post.get("url")
-        )
-        out.append(
-            Observation(
-                key=f"reddit:{post.get('subreddit', '?')}:{post_id}",
-                status=Status.LISTED,
-                title=title,
-                url=link,
-            )
-        )
-    return out
+    return parse_listing(data, target)

@@ -25,6 +25,10 @@ USER_AGENTS: list[str] = [
 # Reddit blocks default library UAs; it wants something descriptive.
 REDDIT_USER_AGENT = "gottacatchemall-tcg-monitor/0.1 (personal restock watcher)"
 
+# Used by the browser-session path (reddit_login + reddit_browser) so the
+# saved session and the polling context present the same UA.
+BROWSER_USER_AGENT = USER_AGENTS[0]
+
 DEFAULT_TIMEOUT = httpx.Timeout(15.0, connect=10.0)
 
 
