@@ -5,6 +5,9 @@
 .reddit_session.json
 *.session.json
 .reddit_profile/
+# Pokémon Center stealth-browser profile (Akamai cookies)
+.pc_profile/
+.pc_probe_profile/
 
 # State store
 *.db

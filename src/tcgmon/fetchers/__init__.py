@@ -11,8 +11,9 @@ from . import reddit_browser  # noqa: F401,E402  (Tier 1, logged-in browser)
 from . import rss  # noqa: F401,E402             (Tier 1)
 from . import shopify_json  # noqa: F401,E402  (Tier 2)
 from . import bestbuy_api  # noqa: F401,E402   (Tier 2)
-from . import redsky  # noqa: F401,E402        (Tier 2, Phase 3)
+from . import redsky  # noqa: F401,E402        (Tier 2, Phase 3 — Target)
 from . import nextdata  # noqa: F401,E402      (Tier 2, Phase 3 — Walmart)
+from . import pokemoncenter  # noqa: F401,E402 (Tier 2, Phase 3 — Pokémon Center)
 from . import html_button  # noqa: F401,E402   (Tier 2, Phase 3 — generic)
 
 __all__ = ["Fetcher", "get_fetcher", "register", "registered"]

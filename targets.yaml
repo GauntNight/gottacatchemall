@@ -79,6 +79,22 @@ targets:
     enabled: false
 
   # ─── Tier 2: bot-protected (Phase 3 — slow, fail-soft, off by default) ──
+  # Pokémon Center: official MSRP source, heavily Akamai-protected. Watches
+  # the CATEGORY page for new product tiles (a new SKU = a drop). Runs a
+  # headed real-Chrome window (headless is detected); a challenge yields no
+  # observations, never a false signal. Enable on a residential machine.
+  - name: pokecenter-etb
+    fetcher: pokemoncenter
+    url: https://www.pokemoncenter.com/category/elite-trainer-box
+    interval_minutes: 12
+    enabled: false
+    keywords: []   # e.g. [pitch black, "elite trainer"] to narrow the grid
+    options:
+      settle_ms: 7000
+      tiles_timeout_ms: 15000
+      headless: false
+
+
   - name: walmart-etb
     fetcher: nextdata
     url: https://www.walmart.com/ip/PLACEHOLDER/000000000
