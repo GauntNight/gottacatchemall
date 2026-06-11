@@ -26,7 +26,9 @@ targets:
 
   - name: pokebeach-news
     fetcher: rss
-    url: https://www.pokebeach.com/feed
+    # PokeBeach runs XenForo, not WordPress — the /feed URL in the spec is a
+    # broken WP endpoint (500/403). This is the real forum-wide RSS feed.
+    url: https://www.pokebeach.com/forums/forum/-/index.rss
     interval_minutes: 20
     keywords: []   # PokeBeach is TCG-specific; take everything
 

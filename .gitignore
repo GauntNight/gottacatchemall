@@ -4,6 +4,7 @@
 # Saved logged-in browser session (Reddit) — contains auth cookies
 .reddit_session.json
 *.session.json
+.reddit_profile/
 
 # State store
 *.db
