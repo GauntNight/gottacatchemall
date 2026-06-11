@@ -47,19 +47,19 @@ targets:
     options:
       search: pokemon elite trainer
 
-  # Shopify storefronts expose {product_url}.json — flip enabled once the
-  # next set's product URLs exist. (URLs below are this-set placeholders.)
+  # Shopify storefronts expose {product_url}.js (availability + cents price).
+  # These two carry real Pitch Black ETB listings and connect over plain HTTP.
   - name: galactic-toys
     fetcher: shopify_json
     url: https://galactictoys.com/products/pre-order-july-2026-pokemon-tcg-mega-evolutions-pitch-black-me05-elite-trainer-box
     interval_minutes: 10
-    enabled: false
+    enabled: true
 
   - name: rocket-city-toys
     fetcher: shopify_json
     url: https://www.rocketcitytoys.com/products/pok-mon-tcg-mega-evolution-pitch-black-elite-trainer-box
     interval_minutes: 10
-    enabled: false
+    enabled: true
 
   # Custom storefronts with no JSON — generic add-to-cart text scrape.
   - name: dacardworld
