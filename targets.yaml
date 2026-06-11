@@ -30,7 +30,13 @@ targets:
     # broken WP endpoint (500/403). This is the real forum-wide RSS feed.
     url: https://www.pokebeach.com/forums/forum/-/index.rss
     interval_minutes: 20
-    keywords: []   # PokeBeach is TCG-specific; take everything
+    # The forum-wide feed is noisy (deck help, reveals, chatter). Filter to
+    # an actual *buyable* signal AND the set we're hunting:
+    #   (any purchase signal)  AND  (the set name)
+    # To track the next set, swap the `require` line — no code changes.
+    keywords: [preorder, pre-order, "pre order", "now live", "now available",
+               "available now", "in stock", restock, "on sale", "live on"]
+    require: ["pitch black"]
 
   # ─── Tier 2: the easy wins (Phase 2 — enable when you have a key/URLs) ──
   # Best Buy: the only real official API. Set BESTBUY_API_KEY in .env.

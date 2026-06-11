@@ -19,13 +19,6 @@ from .base import register
 log = logging.getLogger("tcgmon.rss")
 
 
-def _matches(text: str, keywords: list[str]) -> bool:
-    if not keywords:
-        return True
-    low = text.lower()
-    return any(kw.lower() in low for kw in keywords)
-
-
 @register("rss")
 async def fetch(target: Target, client: httpx.AsyncClient) -> list[Observation]:
     try:
@@ -40,7 +33,7 @@ async def fetch(target: Target, client: httpx.AsyncClient) -> list[Observation]:
     for entry in parsed.entries:
         title = getattr(entry, "title", "")
         summary = getattr(entry, "summary", "")
-        if not _matches(f"{title} {summary}", target.keywords):
+        if not target.matches(f"{title} {summary}"):
             continue
         entry_id = getattr(entry, "id", None) or getattr(entry, "link", title)
         out.append(

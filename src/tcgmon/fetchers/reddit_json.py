@@ -86,13 +86,6 @@ async def _access_token(client: httpx.AsyncClient) -> str | None:
         return str(_token["access"])
 
 
-def _matches(title: str, keywords: list[str]) -> bool:
-    if not keywords:
-        return True
-    low = title.lower()
-    return any(kw.lower() in low for kw in keywords)
-
-
 def parse_listing(data: dict, target: Target) -> list[Observation]:
     """Turn a Reddit listing JSON into keyword-filtered observations.
 
@@ -103,7 +96,7 @@ def parse_listing(data: dict, target: Target) -> list[Observation]:
     for child in data.get("data", {}).get("children", []):
         post = child.get("data", {})
         title = post.get("title", "")
-        if not _matches(title, target.keywords):
+        if not target.matches(title):
             continue
         post_id = post.get("name") or post.get("id")  # e.g. t3_abc123
         permalink = post.get("permalink")

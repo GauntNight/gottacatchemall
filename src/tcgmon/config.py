@@ -24,7 +24,12 @@ class Target:
     fetcher: str
     url: str = ""
     interval_minutes: float = 15.0
+    # ``keywords``: ANY-of filter (OR). Empty = match everything.
     keywords: list[str] = field(default_factory=list)
+    # ``require``: ALL-of filter (AND). Every term must be present. Empty =
+    # no constraint. Combine the two to express "(any purchase signal) AND
+    # (the set name)" — e.g. keywords=[preorder, "now live"], require=["pitch black"].
+    require: list[str] = field(default_factory=list)
     enabled: bool = True
     # Free-form per-fetcher options (e.g. Best Buy search term, key names).
     options: dict = field(default_factory=dict)
@@ -32,6 +37,20 @@ class Target:
     @property
     def interval_seconds(self) -> float:
         return self.interval_minutes * 60.0
+
+    def matches(self, text: str) -> bool:
+        """True if ``text`` passes this target's keyword filter.
+
+        ``keywords`` is OR (at least one must appear, unless empty);
+        ``require`` is AND (every term must appear). Both are case-insensitive
+        substring tests. Used by every Tier-1 fetcher so filtering is uniform.
+        """
+        low = text.lower()
+        if self.keywords and not any(kw.lower() in low for kw in self.keywords):
+            return False
+        if self.require and not all(req.lower() in low for req in self.require):
+            return False
+        return True
 
 
 @dataclass(slots=True)
@@ -55,6 +74,7 @@ def load_targets(path: str | Path) -> list[Target]:
                 url=entry.get("url", ""),
                 interval_minutes=float(entry.get("interval_minutes", 15)),
                 keywords=list(entry.get("keywords", [])),
+                require=list(entry.get("require", [])),
                 enabled=bool(entry.get("enabled", True)),
                 options=dict(entry.get("options", {})),
             )
