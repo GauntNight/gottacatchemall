@@ -40,12 +40,22 @@ targets:
 
   # ─── Tier 2: the easy wins (Phase 2 — enable when you have a key/URLs) ──
   # Best Buy: the only real official API. Set BESTBUY_API_KEY in .env.
+  # Limits are generous (50k/day, 5/sec) so 5-min polling is safe.
+  # Discovery mode — fuzzy search until you know the SKUs:
   - name: bestbuy-etb-search
     fetcher: bestbuy_api
     interval_minutes: 5
     enabled: false
     options:
       search: pokemon elite trainer
+  # Precise mode — watch exact SKUs in ONE call via the in() operator.
+  # Fill `skus` from the search results, then prefer this over search.
+  - name: bestbuy-pitch-black
+    fetcher: bestbuy_api
+    interval_minutes: 5
+    enabled: false
+    options:
+      skus: []   # e.g. [6588509, 6588510]
 
   # Shopify storefronts expose {product_url}.js (availability + cents price).
   # These two carry real Pitch Black ETB listings and connect over plain HTTP.
