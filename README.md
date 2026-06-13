@@ -21,12 +21,13 @@ The core discipline is **edge detection**: store the last state per
 
 | Phase | Scope | State |
 |---|---|---|
-| **1** | Tier 1: Reddit JSON + PokeBeach RSS + ntfy | ✅ implemented |
-| **2** | Best Buy API + Shopify `.json` watchers | ✅ implemented (add keys/URLs) |
-| **3** | Target (RedSky) / Walmart (`__NEXT_DATA__`) / generic HTML | ⚠️ best-effort, fail-soft, off by default |
+| **1** | Tier 1: Reddit (browser-warmed) + PokeBeach RSS + ntfy | ✅ live |
+| **2** | Shopify `.js` watchers + Best Buy API | ✅ live (Shopify); Best Buy needs a free key |
+| **3** | Target (RedSky) ✅ live · Walmart (`__NEXT_DATA__`) / Pokémon Center / generic HTML ⚠️ best-effort, off by default |
 
 Phase 1 alone would have caught the 2026-06-10 Pitch Black preorder within
-minutes.
+minutes. The current live watch list (and per-target notes) is tracked in
+[`PROGRESS.md`](./PROGRESS.md).
 
 ## Architecture
 
@@ -34,8 +35,8 @@ minutes.
 scheduler (APScheduler)         one independent, jittered job per target
    │
    ├─ fetchers/                 one module per source type
-   │    reddit_json · rss · shopify_json · bestbuy_api
-   │    redsky · nextdata · html_button
+   │    reddit_browser · reddit_json · rss · shopify_json · bestbuy_api
+   │    redsky · nextdata · pokemoncenter · html_button
    │
    ├─ store (SQLite)            (source,key) → status; alert on edge only
    │
@@ -51,7 +52,8 @@ recommendations): **SQLite** state store, **APScheduler** scheduler,
 ```bash
 # 1. Install (Python 3.12+)
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\Activate.ps1
-pip install -e ".[dev]"
+pip install -e ".[browser,dev]"   # `browser` = Playwright, used by reddit_browser + pokemoncenter
+playwright install chromium
 
 # 2. Configure
 cp .env.example .env          # set NTFY_TOPIC (and BESTBUY_API_KEY if used)
@@ -125,7 +127,9 @@ pytest            # edge-detection logic, no network required
 - **Unofficial endpoints drift** (RedSky, Shopify `.json` semantics,
   Walmart `__NEXT_DATA__`). Those fetchers fail soft to `unknown` by design.
 - **Run from a residential-ish IP.** Datacenter IPs get challenged faster by
-  Pokémon Center / Walmart. Tier 1 runs fine from anywhere.
+  Pokémon Center / Walmart / Target RedSky (Akamai). A burst of requests trips
+  it; the 10-min poll cadence does not. A challenge fails soft to `unknown`.
+  Tier 1 runs fine from anywhere.
 - Check each site's ToS if this ever becomes more than personal tooling.
 
 MIT licensed.
