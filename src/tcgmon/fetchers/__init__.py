@@ -14,6 +14,7 @@ from . import bestbuy_api  # noqa: F401,E402   (Tier 2)
 from . import redsky  # noqa: F401,E402        (Tier 2, Phase 3 — Target)
 from . import nextdata  # noqa: F401,E402      (Tier 2, Phase 3 — Walmart)
 from . import pokemoncenter  # noqa: F401,E402 (Tier 2, Phase 3 — Pokémon Center)
+from . import gamestop  # noqa: F401,E402      (Tier 2, Phase 3 — GameStop)
 from . import html_button  # noqa: F401,E402   (Tier 2, Phase 3 — generic)
 
 __all__ = ["Fetcher", "get_fetcher", "register", "registered"]

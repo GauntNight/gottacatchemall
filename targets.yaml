@@ -87,11 +87,24 @@ targets:
     fetcher: pokemoncenter
     url: https://www.pokemoncenter.com/category/elite-trainer-box
     interval_minutes: 12
-    enabled: false
-    keywords: []   # e.g. [pitch black, "elite trainer"] to narrow the grid
+    enabled: true
+    keywords: [pitch black]   # narrow the grid to the set we're hunting
     options:
       settle_ms: 7000
       tiles_timeout_ms: 15000
+      headless: false
+
+  # GameStop (Salesforce Commerce) 403s plain HTTP — bot-walled like PC, so
+  # this renders the product page with the stealth browser and reads JSON-LD
+  # availability (falling back to button text). Pitch Black ETB, item 20034819.
+  - name: gamestop-pitch-black
+    fetcher: gamestop
+    url: https://www.gamestop.com/toys-games/trading-cards/products/pokemon-trading-card-game-pitch-black-elite-trainer-box/20034819.html
+    interval_minutes: 12
+    enabled: true
+    options:
+      settle_ms: 4000
+      ready_timeout_ms: 15000
       headless: false
 
 
