@@ -10,6 +10,8 @@
 .pc_probe_profile/
 # GameStop stealth-browser profile
 .gamestop_profile/
+# Walmart stealth-browser profile
+.walmart_profile/
 
 # State store
 *.db

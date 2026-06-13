@@ -108,11 +108,21 @@ targets:
       headless: false
 
 
+  # Walmart — Pitch Black ETB (item 20161351456). PerimeterX walls plain HTTP,
+  # so this renders via the stealth browser and reads __NEXT_DATA__. The listing
+  # is marketplace-only (rotating 3P resellers ~$145, no Walmart $59.99 offer
+  # yet), so it gates on PRICE: a *catch* fires only when an offer lands at/below
+  # max_price. Armed OUT_OF_STOCK at the scalper price; fires near MSRP.
   - name: walmart-etb
-    fetcher: nextdata
-    url: https://www.walmart.com/ip/PLACEHOLDER/000000000
-    interval_minutes: 15
-    enabled: false
+    fetcher: walmart
+    url: https://www.walmart.com/ip/Pok-mon-TCG-Mega-Evolution-Pitch-Black-Elite-Trainer-Box/20161351456
+    interval_minutes: 12
+    enabled: true
+    options:
+      max_price: 80
+      settle_ms: 6000
+      ready_timeout_ms: 20000
+      headless: false
 
   # Target — Pitch Black standard ETB, discovered live 2026-06-12.
   # Availability comes from product_fulfillment_v1 (shipping_options); the

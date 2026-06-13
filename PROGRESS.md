@@ -24,8 +24,8 @@ need real product IDs or a key before they can be trusted.
 | pokecenter-etb | pokemoncenter | ✅ enabled — category-tile watcher, narrowed to "pitch black"; headed + probabilistic Akamai (UNKNOWN from datacenter IPs) |
 | gamestop-pitch-black | gamestop | ✅ enabled — browser-path product watcher (item 20034819); JSON-LD availability + text fallback; headed (challenged headless) |
 | target-etb | redsky | ✅ live — Pitch Black ETB (TCIN 1011483406), OOS $59.99, **armed**, fires on flip |
+| walmart-etb | walmart | ✅ enabled — browser path + **price gate** (item 20161351456); marketplace-only ~$145, armed, fires when an offer ≤ $80 lands |
 | bestbuy-etb-search / bestbuy-pitch-black | bestbuy_api | ❌ dropped — user can't get an API key |
-| walmart-etb | nextdata | ⚠️ built — needs real `/ip/{slug}/{itemId}`; untested live |
 | dacardworld | html_button | ⚠️ 403s on raw HTTP — needs the browser path |
 
 Notifications are **LIVE** via ntfy.sh (`NTFY_TOPIC` set in `.env`, gitignored).
@@ -54,10 +54,21 @@ Subscribe to that topic in the ntfy app to receive pushes on the phone.
 2. **Barnes & Noble** — Pitch Black ETB page wasn't listed yet (they carry other
    Mega Evolution ETBs at `/w/{slug}/{id}`). Re-check closer to the 2026-07-17
    release, then add a watcher (bot-walled → browser path or stock-XHR from devtools).
-3. **Walmart** — live-discover a real `/ip/{slug}/{itemId}` URL, fill the config,
-   and smoke-test `nextdata` (documented shape, never run live — expect drift).
-4. **DA Card World** — move onto the shared `browser.py` path (currently 403s).
-5. ~~Best Buy~~ — dropped (no API key available).
+3. **DA Card World** — move onto the shared `browser.py` path (currently 403s).
+4. ~~Best Buy~~ — dropped (no API key available). ~~Walmart~~ — done (see below).
+
+### Walmart — done 2026-06-13
+
+PerimeterX walls plain HTTP (captcha page, no `__NEXT_DATA__`), so the new
+`walmart` fetcher renders via the stealth browser and reads
+`props.pageProps.initialData.data.product`. The Pitch Black listing
+(item 20161351456) is **marketplace-only** — buy box rotates among 3P resellers
+(~$145, e.g. Vaulted Cards / Revolution Sports Marketing), no Walmart $59.99
+offer yet. So it **gates on price**: IN_STOCK only when `currentPrice` ≤
+`options.max_price` (default $80); a scalper-priced "in stock" reads
+OUT_OF_STOCK (armed). Verified headed: $144.77 → out_of_stock. Pure helpers
+(`extract_offer` / `status_from_offer`) unit-tested. Tune `max_price` if $80 is
+too tight/loose.
 
 ### Notifications — done 2026-06-12
 
