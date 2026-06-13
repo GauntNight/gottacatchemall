@@ -101,11 +101,14 @@ targets:
     interval_minutes: 15
     enabled: false
 
+  # Target — Pitch Black standard ETB, discovered live 2026-06-12.
+  # Availability comes from product_fulfillment_v1 (shipping_options); the
+  # public web `key` ships baked-in as a default, so none is needed here.
+  # Currently OUT_OF_STOCK (street date 2026-07-17) — armed, fires on flip.
   - name: target-etb
     fetcher: redsky
-    url: https://www.target.com/p/PLACEHOLDER/-/A-00000000
-    interval_minutes: 15
-    enabled: false
+    url: https://www.target.com/p/pok-233-mon-trading-card-game-mega-evolution-pitch-black-elite-trainer-box/-/A-1011483406
+    interval_minutes: 10
+    enabled: true
     options:
-      tcin: "00000000"
-      key: "PUBLIC_WEB_KEY_FROM_DEVTOOLS"
+      tcin: "1011483406"
