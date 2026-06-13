@@ -126,7 +126,10 @@ targets:
 
   # Target — Pitch Black standard ETB, discovered live 2026-06-12.
   # Availability comes from product_fulfillment_v1 (shipping_options); the
-  # public web `key` ships baked-in as a default, so none is needed here.
+  # public web `key` ships baked-in as a default. Plain HTTP works from a
+  # clean IP but Akamai 403s a flagged one — on a 403 the fetcher transparently
+  # retries the same JSON calls from a warmed target.com browser context
+  # (set browser: true to skip the httpx attempt on a known-blocked IP).
   # Currently OUT_OF_STOCK (street date 2026-07-17) — armed, fires on flip.
   - name: target-etb
     fetcher: redsky
@@ -135,3 +138,5 @@ targets:
     enabled: true
     options:
       tcin: "1011483406"
+      headless: false   # browser fallback path; headless is challenged
+      settle_ms: 6000

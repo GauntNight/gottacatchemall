@@ -23,7 +23,7 @@ need real product IDs or a key before they can be trusted.
 | rocket-city-toys | shopify_json | ✅ live — OOS $49.99 MSRP, **armed**, fires on flip |
 | pokecenter-etb | pokemoncenter | ✅ enabled — category-tile watcher, narrowed to "pitch black"; headed + probabilistic Akamai (UNKNOWN from datacenter IPs) |
 | gamestop-pitch-black | gamestop | ✅ enabled — browser-path product watcher (item 20034819); JSON-LD availability + text fallback; headed (challenged headless) |
-| target-etb | redsky | ✅ live — Pitch Black ETB (TCIN 1011483406), OOS $59.99, **armed**, fires on flip |
+| target-etb | redsky | ✅ live — Pitch Black ETB (TCIN 1011483406), OOS $59.99, **armed**; browser fallback beats the Akamai 403 |
 | walmart-etb | walmart | ✅ enabled — browser path + **price gate** (item 20161351456); marketplace-only ~$145, armed, fires when an offer ≤ $80 lands |
 | bestbuy-etb-search / bestbuy-pitch-black | bestbuy_api | ❌ dropped — user can't get an API key |
 | dacardworld | html_button | ⚠️ 403s on raw HTTP — needs the browser path |
@@ -94,8 +94,13 @@ against the real API shape:
 - We read that for the edge signal and enrich title/price from `pdp_client_v1`
   best-effort. Parsing verified deterministically across OOS / IN_STOCK /
   PRE_ORDER_SELLABLE / weird-status / 403 scenarios.
-- RedSky is Akamai-protected and 403s under a request **burst** (→ UNKNOWN,
-  never a false alert). At the 10-min poll cadence there is no burst.
+- RedSky is Akamai-protected and 403s a flagged IP. **Browser fallback
+  (2026-06-13):** on a 403 the fetcher transparently re-runs the same JSON
+  calls (`product_fulfillment_v1` + `pdp_client_v1`) from a warmed target.com
+  page via the stealth browser, inheriting Akamai's `_abck` cookie + Origin —
+  so it works even when plain HTTP is blocked. Verified headed on this machine:
+  httpx 403 → browser → `out_of_stock $59.99`. Plain HTTP stays primary (lighter
+  on a clean IP); `options.browser: true` forces the browser path.
 
 ### GameStop + Pokémon Center — enabled 2026-06-13
 
