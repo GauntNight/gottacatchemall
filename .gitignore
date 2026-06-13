@@ -8,6 +8,8 @@
 # Pokémon Center stealth-browser profile (Akamai cookies)
 .pc_profile/
 .pc_probe_profile/
+# GameStop stealth-browser profile
+.gamestop_profile/
 
 # State store
 *.db

@@ -21,9 +21,10 @@ need real product IDs or a key before they can be trusted.
 | pokebeach-news | rss | ✅ live, filtered to the Pitch Black preorder |
 | galactic-toys | shopify_json | ✅ live — in stock $114.95 |
 | rocket-city-toys | shopify_json | ✅ live — OOS $49.99 MSRP, **armed**, fires on flip |
-| bestbuy-etb-search / bestbuy-pitch-black | bestbuy_api | ⚙️ ready — needs `BESTBUY_API_KEY` |
-| pokecenter-etb | pokemoncenter | ⚠️ built, fail-soft, headed + probabilistic Akamai; off by default |
+| pokecenter-etb | pokemoncenter | ✅ enabled — category-tile watcher, narrowed to "pitch black"; headed + probabilistic Akamai (UNKNOWN from datacenter IPs) |
+| gamestop-pitch-black | gamestop | ✅ enabled — browser-path product watcher (item 20034819); JSON-LD availability + text fallback; headed (challenged headless) |
 | target-etb | redsky | ✅ live — Pitch Black ETB (TCIN 1011483406), OOS $59.99, **armed**, fires on flip |
+| bestbuy-etb-search / bestbuy-pitch-black | bestbuy_api | ❌ dropped — user can't get an API key |
 | walmart-etb | nextdata | ⚠️ built — needs real `/ip/{slug}/{itemId}`; untested live |
 | dacardworld | html_button | ⚠️ 403s on raw HTTP — needs the browser path |
 
@@ -46,13 +47,21 @@ Subscribe to that topic in the ntfy app to receive pushes on the phone.
 
 ## What's next
 
-1. **Best Buy** — once a free key exists: enable search, `--once` to discover the
-   Pitch Black SKUs, paste them into `bestbuy-pitch-black.skus`, run precise mode.
-2. **Walmart** — live-discover a real `/ip/{slug}/{itemId}` URL, fill the config,
-   and smoke-test `nextdata` (written to a documented shape but never run against
-   a real listing — expect shape drift). _Target is now done (see below)._
-3. **DA Card World** — move onto the shared `browser.py` path (currently 403s).
-4. **Notifications** — _done 2026-06-12._ Topic set; verified end-to-end against
+1. **Verify the browser watchers from a residential machine.** gamestop-pitch-black
+   and pokecenter-etb both return UNKNOWN from this datacenter IP (headed Chrome is
+   challenged). Run headed on a home network with a warmed profile to confirm they
+   read availability. Target redsky likewise needs a clean (non-burst) IP.
+2. **Barnes & Noble** — Pitch Black ETB page wasn't listed yet (they carry other
+   Mega Evolution ETBs at `/w/{slug}/{id}`). Re-check closer to the 2026-07-17
+   release, then add a watcher (bot-walled → browser path or stock-XHR from devtools).
+3. **Walmart** — live-discover a real `/ip/{slug}/{itemId}` URL, fill the config,
+   and smoke-test `nextdata` (documented shape, never run live — expect drift).
+4. **DA Card World** — move onto the shared `browser.py` path (currently 403s).
+5. ~~Best Buy~~ — dropped (no API key available).
+
+### Notifications — done 2026-06-12
+
+Topic set; verified end-to-end against
    ntfy.sh. Fixed a latent crash: the notifier put the alert title in an HTTP
    header, so the emoji (🟢) / accented product names (Pokémon) in the IN_STOCK
    alert raised `UnicodeEncodeError` — the most important push would have died.
@@ -77,10 +86,21 @@ against the real API shape:
 - RedSky is Akamai-protected and 403s under a request **burst** (→ UNKNOWN,
   never a false alert). At the 10-min poll cadence there is no burst.
 
+### GameStop + Pokémon Center — enabled 2026-06-13
+
+- **GameStop** `gamestop` fetcher (new): bot-walled (403 plain HTTP), so it
+  renders the PDP with the shared stealth browser and reads `offers.availability`
+  from JSON-LD, falling back to add-to-cart/text signals. Tracks one product
+  (item 20034819); OOS↔IN_STOCK; fails soft to UNKNOWN. Pure helpers unit-tested.
+- **Pokémon Center** enabled (preorders are live there now), category-tile
+  watcher narrowed to `keywords: [pitch black]`.
+- Both are headed-Chrome paths: headless is challenged (verified). Their live
+  success is environment-dependent (residential IP + warmed profile).
+
 ## Notes
 
-- Tests: 36 pass (the `tests/test_store.py` Windows `PermissionError` on
-  pytest's tmp_path does not reproduce in the current environment).
+- Tests: 47 pass (added GameStop parsing tests; the old `tests/test_store.py`
+  Windows `PermissionError` on pytest's tmp_path does not reproduce here).
 - Pokémon Center detection is environment-dependent: headless is always blocked;
   headed real Chrome with a warmed `.pc_profile` gets through intermittently and
   should fare better from a residential IP.

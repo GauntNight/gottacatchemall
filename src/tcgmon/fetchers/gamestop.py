@@ -49,8 +49,9 @@ log = logging.getLogger("tcgmon.gamestop")
 
 PROFILE_DIR = os.environ.get("GAMESTOP_PROFILE_DIR", ".gamestop_profile")
 DEFAULT_WARM_URL = "https://www.gamestop.com/"
-# The product detail area — present once the PDP has rendered.
-READY_SELECTOR = "script[type='application/ld+json'], .add-to-cart, h1"
+# The JSON-LD payload carries availability. It's a <script>, so it is never
+# "visible" — we wait for it ATTACHED to the DOM, not visible.
+READY_SELECTOR = "script[type='application/ld+json']"
 
 _DEFAULT_IN = ["add to cart", "add to bag", "pre-order", "preorder", "buy now"]
 _DEFAULT_OOS = ["sold out", "out of stock", "not available", "unavailable",
@@ -134,12 +135,17 @@ async def fetch(target: Target, client: httpx.AsyncClient) -> list[Observation]:
                 # Status is unreliable behind the bot wall (403 while the SPA
                 # still renders); judge by whether the product area appears.
                 await page.goto(target.url, wait_until="domcontentloaded")
+                # Wait for the JSON-LD to land in the DOM (attached, not visible
+                # — a <script> never becomes visible, which is why a plain
+                # wait_for_selector here always timed out and false-flagged a
+                # challenge). Best-effort: if it never lands we still parse what
+                # rendered and fall through to UNKNOWN naturally below.
                 try:
-                    await page.wait_for_selector(READY_SELECTOR, timeout=ready_timeout_ms)
-                except Exception:  # noqa: BLE001 — challenged: nothing rendered
-                    log.info("[%s] product page didn't render (challenged) -> UNKNOWN",
-                             target.name)
-                    return unknown
+                    await page.wait_for_selector(READY_SELECTOR, state="attached",
+                                                 timeout=ready_timeout_ms)
+                except Exception:  # noqa: BLE001
+                    log.info("[%s] JSON-LD didn't appear in %dms; parsing rendered DOM",
+                             target.name, ready_timeout_ms)
                 await page.wait_for_timeout(settle_ms)
                 html_text = await page.content()
                 body_text = await page.eval_on_selector(
@@ -157,7 +163,11 @@ async def fetch(target: Target, client: httpx.AsyncClient) -> list[Observation]:
     if status in (None, Status.UNKNOWN):
         status = status_from_text(body_text, in_sigs, oos_sigs)
         source = "text-signal"
-    log.info("[%s] %s -> %s", target.name, source, status.value)
+    if status is Status.UNKNOWN and "application/ld+json" not in html_text:
+        log.info("[%s] page didn't render the product (likely challenged) -> UNKNOWN",
+                 target.name)
+    else:
+        log.info("[%s] %s -> %s", target.name, source, status.value)
 
     return [Observation(key=obs_key, status=status, title=title.strip(),
                         url=target.url)]

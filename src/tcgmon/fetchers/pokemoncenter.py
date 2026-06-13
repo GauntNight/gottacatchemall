@@ -99,7 +99,12 @@ async def fetch(target: Target, client: httpx.AsyncClient) -> list[Observation]:
                 # we judge success by whether tiles actually appear.
                 await page.goto(target.url, wait_until="domcontentloaded")
                 try:
-                    await page.wait_for_selector(TILE_SELECTOR, timeout=tiles_timeout_ms)
+                    # Tiles can be attached to the DOM but not pass Playwright's
+                    # "visible" check in time (lazy hydration / offscreen), which
+                    # false-flagged a challenge. Wait for ATTACHED — we read the
+                    # tiles with eval_on_selector_all (attached) right after.
+                    await page.wait_for_selector(TILE_SELECTOR, state="attached",
+                                                 timeout=tiles_timeout_ms)
                 except Exception:  # noqa: BLE001 — challenged: no tiles rendered
                     log.info("[%s] no product tiles (challenged) -> nothing observed",
                              target.name)
@@ -123,7 +128,12 @@ async def fetch(target: Target, client: httpx.AsyncClient) -> list[Observation]:
     for tile in tiles:
         href = tile.get("href") or ""
         title = tile.get("txt") or ""
-        if not href or not target.matches(title):
+        # The visible tile text is often just a badge ("SOLD OUT") or price —
+        # the product name lives in the href slug. Match against both, with
+        # the slug's hyphens flattened so a "pitch black" keyword hits
+        # ".../...-pitch-black-...".
+        slug = href.replace("-", " ").replace("/", " ")
+        if not href or not target.matches(f"{title} {slug}"):
             continue
         sku = _sku_from_href(href)
         if sku in seen:
