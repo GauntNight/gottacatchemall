@@ -49,21 +49,22 @@ class Notifier:
             log.info("DRY-RUN notify | %s | %s", title, body.replace("\n", " | "))
             return
 
-        headers = {"Title": title}
+        # ntfy's header-based publishing requires ASCII header values, so a
+        # title with an emoji (🟢) or an accented product name (Pokémon)
+        # raises UnicodeEncodeError — and that's the IN_STOCK alert we care
+        # about most. Use JSON publishing instead: title/message ride in a
+        # UTF-8 body, so unicode is safe. Priority is an int (5=max .. 1=min).
+        payload: dict = {
+            "topic": self.topic,
+            "title": title,
+            "message": body,
+            "tags": ["shopping_cart"] if alert.new_status is Status.IN_STOCK else ["bell"],
+            "priority": 5 if alert.new_status is Status.IN_STOCK else 3,
+        }
         if alert.url:
-            headers["Click"] = alert.url
-        headers["Tags"] = (
-            "shopping_cart" if alert.new_status is Status.IN_STOCK else "bell"
-        )
-        headers["Priority"] = (
-            "high" if alert.new_status is Status.IN_STOCK else "default"
-        )
+            payload["click"] = alert.url
         try:
-            resp = await client.post(
-                f"{self.server}/{self.topic}",
-                content=body.encode("utf-8"),
-                headers=headers,
-            )
+            resp = await client.post(self.server, json=payload)
             resp.raise_for_status()
         except httpx.HTTPError as exc:  # never let a notify failure kill a job
             log.warning("ntfy send failed: %s", exc)
