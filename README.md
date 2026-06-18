@@ -66,6 +66,9 @@ python -m tcgmon --once
 
 # 5. Run forever on the schedule
 python -m tcgmon
+
+# Inspect captured signals (every state transition / hit) as JSON
+python -m tcgmon --signals 100
 ```
 
 With `NTFY_TOPIC` empty, the monitor runs in **dry-run**: alerts print to

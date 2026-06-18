@@ -120,3 +120,37 @@ def test_unknown_first_sighting_is_not_stored(tmp_path):
     s.record("walmart", Observation(key="w:1", status=Status.UNKNOWN))
     assert s.get_status("w:1") is None
     s.close()
+
+
+# ── signal capture (the pattern-mining dataset) ───────────────────────────
+
+def test_signals_log_transitions_and_flag_alerts(tmp_path):
+    s = _store(tmp_path)
+    key = "shopify:g"
+    s.record("g", Observation(key=key, status=Status.OUT_OF_STOCK))   # first sighting
+    s.record("g", Observation(key=key, status=Status.IN_STOCK))        # the hit
+    s.record("g", Observation(key=key, status=Status.OUT_OF_STOCK))    # sold out
+    sigs = s.recent_signals()
+    # Newest first: OOS, IN_STOCK, OOS(first).
+    assert [x["new_status"] for x in sigs] == ["out_of_stock", "in_stock", "out_of_stock"]
+    # Only the OOS->IN_STOCK transition is an alert.
+    assert [x["alerted"] for x in sigs] == [0, 1, 0]
+    assert sigs[1]["old_status"] == "out_of_stock"
+    s.close()
+
+
+def test_signals_skip_steady_state(tmp_path):
+    s = _store(tmp_path)
+    key = "shopify:g"
+    s.record("g", Observation(key=key, status=Status.IN_STOCK))
+    s.record("g", Observation(key=key, status=Status.IN_STOCK))   # no change
+    s.record("g", Observation(key=key, status=Status.IN_STOCK))   # no change
+    assert len(s.recent_signals()) == 1   # only the first sighting logged
+    s.close()
+
+
+def test_signals_ignore_unknown(tmp_path):
+    s = _store(tmp_path)
+    s.record("w", Observation(key="w:1", status=Status.UNKNOWN))
+    assert s.recent_signals() == []
+    s.close()

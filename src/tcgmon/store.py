@@ -60,6 +60,29 @@ class StateStore:
             )
             """
         )
+        # Append-only history of every state TRANSITION (not every poll): a
+        # first sighting, an OOS->in_stock "hit", an in_stock->OOS sell-out,
+        # etc. `alerted` flags the ones that fired a push. This is the dataset
+        # for later pattern mining (when do drops land, how long stock lasts).
+        self._conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS signals (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                ts         TEXT NOT NULL,
+                key        TEXT NOT NULL,
+                source     TEXT NOT NULL,
+                old_status TEXT,
+                new_status TEXT NOT NULL,
+                title      TEXT,
+                url        TEXT,
+                price      TEXT,
+                alerted    INTEGER NOT NULL
+            )
+            """
+        )
+        self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_signals_key_ts ON signals (key, ts)"
+        )
         self._conn.commit()
 
     def get_status(self, key: str) -> Status | None:
@@ -99,9 +122,24 @@ class StateStore:
                 """,
                 (obs.status.value, obs.title, obs.url, obs.price, now, obs.key),
             )
+        alerted = is_alertable(old, obs.status)
+
+        # Record the transition (first sighting, or a genuine old->new change)
+        # to the append-only signals log. Steady state (old == new) is skipped
+        # so the log stays a history of *changes*, not of every poll.
+        if old is None or old is not obs.status:
+            self._conn.execute(
+                """
+                INSERT INTO signals
+                    (ts, key, source, old_status, new_status, title, url, price, alerted)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (now, obs.key, source, old.value if old else None,
+                 obs.status.value, obs.title, obs.url, obs.price, int(alerted)),
+            )
         self._conn.commit()
 
-        if is_alertable(old, obs.status):
+        if alerted:
             return Alert(
                 key=obs.key,
                 old_status=old,
@@ -112,6 +150,14 @@ class StateStore:
                 source=source,
             )
         return None
+
+    def recent_signals(self, limit: int = 50) -> list[dict]:
+        """Most-recent transitions first — for inspection / pattern analysis."""
+        rows = self._conn.execute(
+            "SELECT ts, key, source, old_status, new_status, title, url, price, "
+            "alerted FROM signals ORDER BY id DESC LIMIT ?", (limit,)
+        ).fetchall()
+        return [dict(r) for r in rows]
 
     def close(self) -> None:
         self._conn.close()
