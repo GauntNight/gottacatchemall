@@ -66,18 +66,29 @@ _HEADERS = {
     "Referer": "https://www.target.com/",
 }
 
-# shipping_options.availability_status string -> our three-valued Status.
+# availability_status string -> our three-valued Status.
 _IN = {"IN_STOCK", "AVAILABLE", "PRE_ORDER_SELLABLE", "PRE_ORDER", "LIMITED_STOCK"}
-_OUT = {"OUT_OF_STOCK", "UNAVAILABLE", "NOT_AVAILABLE"}
+_OUT = {"OUT_OF_STOCK", "UNAVAILABLE", "NOT_AVAILABLE", "NOT_SOLD_IN_STORE"}
 
 
-def parse_fulfillment(data: object) -> Status:
-    """``product_fulfillment_v1`` JSON -> Status. Unknown shapes -> UNKNOWN."""
+def parse_fulfillment(data: object, *, pickup: bool = False) -> Status:
+    """``product_fulfillment_v1`` JSON -> Status. Unknown shapes -> UNKNOWN.
+
+    ``pickup=False`` (default) reads online shipping availability. ``pickup=True``
+    reads in-store **Order Pickup** for the store passed as ``store_id`` — i.e.
+    "can I pick this up at *my* Target right now" — via store_options[0].
+    """
     try:
         fulfillment = (data["data"]["product"] or {}).get("fulfillment") or {}
-        ship = fulfillment.get("shipping_options") or {}
-        status_str = (ship.get("availability_status") or "").upper()
-        qty = ship.get("available_to_promise_quantity")
+        if pickup:
+            opts = fulfillment.get("store_options") or []
+            opt = opts[0] if opts else {}
+            status_str = ((opt.get("order_pickup") or {}).get("availability_status") or "").upper()
+            qty = opt.get("location_available_to_promise_quantity")
+        else:
+            ship = fulfillment.get("shipping_options") or {}
+            status_str = (ship.get("availability_status") or "").upper()
+            qty = ship.get("available_to_promise_quantity")
     except (KeyError, TypeError):
         return Status.UNKNOWN
     if status_str in _IN:
@@ -104,8 +115,8 @@ def parse_pdp(data: object) -> tuple[str | None, str | None]:
         return None, None
 
 
-async def _browser_fetch_json(urls: list[str], *, headless: bool,
-                              settle_ms: int) -> list[object | None]:
+async def _browser_fetch_json(urls: list[str], *, profile_dir: str,
+                              headless: bool, settle_ms: int) -> list[object | None]:
     """Fetch each JSON URL from inside a warmed target.com page, so the request
     carries Akamai's validated cookie + the target.com Origin."""
     from playwright.async_api import async_playwright
@@ -113,7 +124,7 @@ async def _browser_fetch_json(urls: list[str], *, headless: bool,
     results: list[object | None] = [None] * len(urls)
     async with async_playwright() as p:
         ctx = await launch_stealth_persistent_context(
-            p, user_data_dir=PROFILE_DIR, user_agent=BROWSER_USER_AGENT,
+            p, user_data_dir=profile_dir, user_agent=BROWSER_USER_AGENT,
             headless=headless,
         )
         try:
@@ -140,14 +151,19 @@ async def _browser_fetch_json(urls: list[str], *, headless: bool,
 async def fetch(target: Target, client: httpx.AsyncClient) -> list[Observation]:
     tcin = target.options.get("tcin")
     key = target.options.get("key") or _DEFAULT_KEY
+    pickup = bool(target.options.get("pickup", False))
+    store_id = target.options.get("store_id", "1234")
+    # A local-pickup watcher is keyed by store so it's distinct from the
+    # online (shipping) watcher for the same TCIN.
     obs_key = f"target:{tcin or target.name}"
+    if pickup:
+        obs_key += f":store:{store_id}"
     unknown = [Observation(key=obs_key, status=Status.UNKNOWN,
                            title=target.name, url=target.url)]
     if not tcin:
         log.warning("[%s] redsky needs options.tcin (the A-<tcin> in the URL)", target.name)
         return unknown
 
-    store_id = target.options.get("store_id", "1234")
     f_params = {
         "key": key, "tcin": tcin, "store_id": store_id,
         "zip": target.options.get("zip", "10001"),
@@ -193,8 +209,12 @@ async def fetch(target: Target, client: httpx.AsyncClient) -> list[Observation]:
     if blocked:
         try:
             from playwright.async_api import async_playwright  # noqa: F401
+            # Per-watcher profile dir: two redsky watchers (online + a local
+            # pickup store) must not share one persistent context concurrently.
+            profile_dir = PROFILE_DIR + (f"_{store_id}" if pickup else "")
             results = await _browser_fetch_json(
                 [f"{_FULFILLMENT}?{urlencode(f_params)}", f"{_PDP}?{urlencode(p_params)}"],
+                profile_dir=profile_dir,
                 headless=bool(target.options.get("headless", False)),
                 settle_ms=int(target.options.get("settle_ms", 6000)),
             )
@@ -213,7 +233,7 @@ async def fetch(target: Target, client: httpx.AsyncClient) -> list[Observation]:
         log.info("[%s] no fulfillment data (challenged) -> UNKNOWN", target.name)
         return unknown
 
-    status = parse_fulfillment(data_f)
+    status = parse_fulfillment(data_f, pickup=pickup)
     title, price = target.name, None
     if data_p is not None:
         t, pr = parse_pdp(data_p)

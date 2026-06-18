@@ -25,6 +25,7 @@ need real product IDs or a key before they can be trusted.
 | gamestop-pitch-black | gamestop | ✅ enabled — browser-path product watcher (item 20034819); JSON-LD availability + text fallback; headed (challenged headless) |
 | target-etb | redsky | ✅ live — Pitch Black ETB (TCIN 1011483406), OOS $59.99, **armed**; browser fallback beats the Akamai 403 |
 | walmart-etb | walmart | ✅ enabled — browser path + **price gate** (item 20161351456); marketplace-only ~$145, armed, fires when an offer ≤ $80 lands |
+| target-edgewater-pickup | redsky | ✅ enabled — **local in-store pickup** at Edgewater NJ (store 1263), `pickup:true`; armed, fires when Order Pickup opens |
 | bestbuy-etb-search / bestbuy-pitch-black | bestbuy_api | ❌ dropped — user can't get an API key |
 | dacardworld | html_button | ⚠️ 403s on raw HTTP — needs the browser path |
 
@@ -69,6 +70,19 @@ offer yet. So it **gates on price**: IN_STOCK only when `currentPrice` ≤
 OUT_OF_STOCK (armed). Verified headed: $144.77 → out_of_stock. Pure helpers
 (`extract_offer` / `status_from_offer`) unit-tested. Tune `max_price` if $80 is
 too tight/loose.
+
+### Signals + local-store watching — done 2026-06-18
+
+- **Signal capture.** SQLite `signals` table logs every state *transition*
+  (first sighting, OOS→in_stock hit, in_stock→OOS sell-out) with an `alerted`
+  flag; steady state and UNKNOWN are skipped. The dataset for pattern mining
+  (drop timing, stock duration, price history). `python -m tcgmon --signals N`
+  dumps the last N as JSON.
+- **Local store pickup.** `redsky` gained `pickup: true` — reads
+  `store_options[0].order_pickup` for a specific `store_id` ("can I pick this up
+  at MY Target"). Resolve a zip→store_id via redsky `nearby_stores_v1` (Edgewater
+  NJ 07020 → store 1263). Local watchers are keyed `target:<tcin>:store:<id>` and
+  use a per-store browser profile so they don't contend with the online watcher.
 
 ### Notifications — done 2026-06-12
 

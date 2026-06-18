@@ -140,3 +140,25 @@ targets:
       tcin: "1011483406"
       headless: false   # browser fallback path; headless is challenged
       settle_ms: 6000
+
+  # Target — LOCAL in-store pickup watcher for a SPECIFIC store.
+  # Edgewater, NJ = store_id 1263 (resolved via redsky nearby_stores_v1 by zip
+  # 07020). Same TCIN as target-etb, but pickup:true reads store_options[0]
+  # .order_pickup — i.e. "can I pick this up at MY Target". Keyed by store so
+  # it's a separate signal from the online watcher. To watch a different store,
+  # change store_id/zip/lat/long (ask Claude to resolve a zip -> store_id).
+  - name: target-edgewater-pickup
+    fetcher: redsky
+    url: https://www.target.com/p/pok-233-mon-trading-card-game-mega-evolution-pitch-black-elite-trainer-box/-/A-1011483406
+    interval_minutes: 12
+    enabled: true
+    options:
+      tcin: "1011483406"
+      store_id: "1263"
+      zip: "07020"
+      state: "NJ"
+      latitude: "40.8276"
+      longitude: "-73.9762"
+      pickup: true
+      headless: false
+      settle_ms: 6000

@@ -41,6 +41,31 @@ def test_no_signal_is_unknown():
     assert parse_fulfillment({}) is Status.UNKNOWN
 
 
+# ── local store pickup mode (pickup=True reads store_options) ──────────────
+
+def _pickup(status, qty=0.0):
+    return {"data": {"product": {"fulfillment": {"store_options": [
+        {"order_pickup": {"availability_status": status},
+         "location_available_to_promise_quantity": qty}]}}}}
+
+
+def test_pickup_in_stock():
+    assert parse_fulfillment(_pickup("IN_STOCK"), pickup=True) is Status.IN_STOCK
+
+
+def test_pickup_unavailable():
+    assert parse_fulfillment(_pickup("UNAVAILABLE"), pickup=True) is Status.OUT_OF_STOCK
+
+
+def test_pickup_not_sold_in_store_is_out():
+    assert parse_fulfillment(_pickup("NOT_SOLD_IN_STORE"), pickup=True) is Status.OUT_OF_STOCK
+
+
+def test_online_mode_does_not_read_store_options():
+    # The Edgewater shape has no shipping_options -> online read is UNKNOWN.
+    assert parse_fulfillment(_pickup("IN_STOCK"), pickup=False) is Status.UNKNOWN
+
+
 # ── title / price ──────────────────────────────────────────────────────────
 
 def test_pdp_title_unescaped_and_price():

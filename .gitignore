@@ -12,8 +12,8 @@
 .gamestop_profile/
 # Walmart stealth-browser profile
 .walmart_profile/
-# Target stealth-browser profile (redsky browser fallback)
-.target_profile/
+# Target stealth-browser profile(s) — one per watcher (online + per store)
+.target_profile*/
 
 # State store
 *.db
