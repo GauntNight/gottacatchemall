@@ -131,34 +131,47 @@ targets:
   # retries the same JSON calls from a warmed target.com browser context
   # (set browser: true to skip the httpx attempt on a known-blocked IP).
   # Currently OUT_OF_STOCK (street date 2026-07-17) — armed, fires on flip.
+  # Online (shipping) Target watcher. NOTE: folded into target-nj-pickup-sweep,
+  # which emits this same online signal (key target:<tcin>) plus per-store NJ
+  # pickup — one browser job on one warmed profile, no contention. Re-enable
+  # this standalone one only if you drop the sweep. (redsky still used directly
+  # for any single-store/online watcher; browser fallback beats the 403.)
   - name: target-etb
     fetcher: redsky
     url: https://www.target.com/p/pok-233-mon-trading-card-game-mega-evolution-pitch-black-elite-trainer-box/-/A-1011483406
     interval_minutes: 10
+    enabled: false   # online coverage now comes from target-nj-pickup-sweep
+    options:
+      tcin: "1011483406"
+      headless: false
+      settle_ms: 6000
+
+  # Target — LOCAL in-store pickup SWEEP across nearby stores, one browser
+  # session. Centered on Edgewater (07020), 25-mi radius, NJ-only (skips the
+  # NYC stores across the Hudson). Each store is an independent signal/alert
+  # keyed target:<tcin>:store:<id>; fires naming the store that opens pickup.
+  # (Supersedes the single-store target-edgewater-pickup, which is disabled.)
+  - name: target-nj-pickup-sweep
+    fetcher: target_nearby
+    url: https://www.target.com/p/pok-233-mon-trading-card-game-mega-evolution-pitch-black-elite-trainer-box/-/A-1011483406
+    interval_minutes: 15
     enabled: true
     options:
       tcin: "1011483406"
-      headless: false   # browser fallback path; headless is challenged
+      label: "Pitch Black ETB (pickup)"
+      zip: "07020"
+      within: 25
+      limit: 12
+      states: ["NJ"]
+      headless: false
       settle_ms: 6000
 
-  # Target — LOCAL in-store pickup watcher for a SPECIFIC store.
-  # Edgewater, NJ = store_id 1263 (resolved via redsky nearby_stores_v1 by zip
-  # 07020). Same TCIN as target-etb, but pickup:true reads store_options[0]
-  # .order_pickup — i.e. "can I pick this up at MY Target". Keyed by store so
-  # it's a separate signal from the online watcher. To watch a different store,
-  # change store_id/zip/lat/long (ask Claude to resolve a zip -> store_id).
   - name: target-edgewater-pickup
     fetcher: redsky
     url: https://www.target.com/p/pok-233-mon-trading-card-game-mega-evolution-pitch-black-elite-trainer-box/-/A-1011483406
     interval_minutes: 12
-    enabled: true
+    enabled: false   # superseded by target-nj-pickup-sweep
     options:
       tcin: "1011483406"
       store_id: "1263"
-      zip: "07020"
-      state: "NJ"
-      latitude: "40.8276"
-      longitude: "-73.9762"
       pickup: true
-      headless: false
-      settle_ms: 6000

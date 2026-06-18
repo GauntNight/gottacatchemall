@@ -23,9 +23,9 @@ need real product IDs or a key before they can be trusted.
 | rocket-city-toys | shopify_json | ✅ live — OOS $49.99 MSRP, **armed**, fires on flip |
 | pokecenter-etb | pokemoncenter | ✅ enabled — category-tile watcher, narrowed to "pitch black"; headed + probabilistic Akamai (UNKNOWN from datacenter IPs) |
 | gamestop-pitch-black | gamestop | ✅ enabled — browser-path product watcher (item 20034819); JSON-LD availability + text fallback; headed (challenged headless) |
-| target-etb | redsky | ✅ live — Pitch Black ETB (TCIN 1011483406), OOS $59.99, **armed**; browser fallback beats the Akamai 403 |
+| target-nj-pickup-sweep | target_nearby | ✅ enabled — **online + nearby NJ in-store pickup** in one browser session (Edgewater 07020, 25mi, NJ-only → Edgewater/North Bergen/Hackensack); each store an independent signal |
 | walmart-etb | walmart | ✅ enabled — browser path + **price gate** (item 20161351456); marketplace-only ~$145, armed, fires when an offer ≤ $80 lands |
-| target-edgewater-pickup | redsky | ✅ enabled — **local in-store pickup** at Edgewater NJ (store 1263), `pickup:true`; armed, fires when Order Pickup opens |
+| target-etb / target-edgewater-pickup | redsky | ⏸️ disabled — folded into target-nj-pickup-sweep (which emits the same online + per-store signals on one warmed profile) |
 | bestbuy-etb-search / bestbuy-pitch-black | bestbuy_api | ❌ dropped — user can't get an API key |
 | dacardworld | html_button | ⚠️ 403s on raw HTTP — needs the browser path |
 
@@ -80,9 +80,16 @@ too tight/loose.
   dumps the last N as JSON.
 - **Local store pickup.** `redsky` gained `pickup: true` — reads
   `store_options[0].order_pickup` for a specific `store_id` ("can I pick this up
-  at MY Target"). Resolve a zip→store_id via redsky `nearby_stores_v1` (Edgewater
-  NJ 07020 → store 1263). Local watchers are keyed `target:<tcin>:store:<id>` and
-  use a per-store browser profile so they don't contend with the online watcher.
+  at MY Target"). Keyed `target:<tcin>:store:<id>`.
+- **Nearby-store sweep (`target_nearby`).** One browser session resolves stores
+  near a zip via `nearby_stores_v1` (caps `limit` at 20; returns nearest-N),
+  filters by `states` (NJ-only skips the closer NYC stores), and checks each
+  one's Order Pickup — plus emits the online (shipping) signal with PDP
+  title/price. So it's the SINGLE Target browser job, reusing the warmed
+  `.target_profile` (a fresh profile gets challenged). Gotchas learned the hard
+  way: `limit>20` → HTTP 400; the fulfillment `state` param needs the **2-letter**
+  code ("NJ", not "New Jersey") or it 400s. `target-etb`/`target-edgewater-pickup`
+  are disabled (folded in).
 
 ### Notifications — done 2026-06-12
 
